@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "htmlq"
+version = "0.5.0"
+description = "Like jq, but for HTML."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Michael Maclean", email = "michael@mgdm.net" }]
+keywords = ["CSS", "HTML", "query"]
+requires-python = ">=3.9"
+
+# Two runtime dependencies, both standing in for a Rust crate that has no
+# standard-library equivalent. Everything else -- the DOM, the CSS selector
+# engine, the HTML serialiser and the WHATWG URL parser -- is ported under
+# htmlq/vendor/. See the dependency table in README.md.
+dependencies = [
+    "html5lib>=1.1",  # cf. html5ever: WHATWG tree construction
+    "idna>=3.4",      # cf. the idna crate: UTS #46 ToASCII, used by url.py
+]
+
+[project.urls]
+repository = "https://github.com/mgdm/htmlq"
+documentation = "https://github.com/mgdm/htmlq/blob/master/README.md"
+
+[project.scripts]
+htmlq = "htmlq.main:main"
+
+[project.optional-dependencies]
+test = ["pytest>=7.4"]
+
+[tool.setuptools.packages.find]
+include = ["htmlq*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

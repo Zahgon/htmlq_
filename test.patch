@@ -1,0 +1,1407 @@
+diff --git a/mgdm_htmlq/tests/__init__.py b/mgdm_htmlq/tests/__init__.py
+new file mode 100644
+index 0000000..0dbb7ff
+--- /dev/null
++++ b/mgdm_htmlq/tests/__init__.py
+@@ -0,0 +1,7 @@
++"""Test suite for the htmlq Python migration.
++
++`test_cli.py` and `test_link.py` are the migrated Rust tests; `test_parity.py`
++replays `cases.py` against `oracle.json`, a recording of the original Rust
++binary; `test_output_file.py` covers the `--output` path the parity harness
++cannot observe.
++"""
+diff --git a/mgdm_htmlq/tests/cases.py b/mgdm_htmlq/tests/cases.py
+new file mode 100644
+index 0000000..224594b
+--- /dev/null
++++ b/mgdm_htmlq/tests/cases.py
+@@ -0,0 +1,263 @@
++"""The shared behavioural corpus for the Rust/Python parity fixtures.
++
++Each case is `(name, argv, stdin)`. `tools/capture_oracle.py` runs the corpus
++against the original Rust binary and records stdout/stderr/exit status into
++`tests/oracle.json`; `tests/test_parity.py` replays the same corpus against this
++port and asserts the recordings match byte for byte.
++
++Keeping the corpus in one place means a case added here is automatically both
++recorded and checked.
++"""
++
++CASES = [
++    # -- the three cases migrated from tests/cli.rs ------------------------
++    (
++        "find_by_class",
++        [".hi"],
++        '<html><head></head><body><div class="hi"><a href="/foo/bar">Hello</a></div></body></html>',
++    ),
++    (
++        "find_by_id",
++        ["#my-id"],
++        '<html><head></head><body><div id="my-id"><a href="/foo/bar">Hello</a></div></body></html>',
++    ),
++    (
++        "remove_links",
++        ["#my-id", "--remove-nodes", "a"],
++        '<html><head></head><body><div id="my-id"><a href="/foo/bar">Hello</a></div></body></html>',
++    ),
++    # -- defaults and the whole-document path -----------------------------
++    ("default_selector", [], "<p>hello</p>"),
++    ("explicit_html", ["html"], "<p>hello</p>"),
++    ("doctype_is_not_selected", [], "<!DOCTYPE html><p>hi</p>"),
++    ("no_match_prints_nothing", [".nope"], "<p>hi</p>"),
++    ("empty_input", [], ""),
++    (
++        "multiple_matches_each_on_own_line",
++        ["li"],
++        "<ul><li>one</li><li>two</li><li>three</li></ul>",
++    ),
++    # -- serializer edge cases --------------------------------------------
++    ("void_element_roundtrip", ["head"], '<head><link  href="/s.css" rel="stylesheet"/></head>'),
++    ("attribute_order_is_source_order", ["a"], '<a z="1" m="2" a="3" href="/x">t</a>'),
++    ("attribute_escaping", ["a"], '<a title=\'q"&amp;&lt;&gt;\'>t</a>'),
++    ("text_escaping", ["p"], "<p>a &amp; b &lt; c &gt; d</p>"),
++    ("nbsp_is_named_entity", ["p"], "<p>a\u00a0b</p>"),
++    ("script_text_is_raw", ["script"], "<script>if (a < b && c) {}</script>"),
++    ("style_text_is_raw", ["style"], "<style>a > b { color: red }</style>"),
++    ("comment_is_preserved", ["body"], "<body><!-- hi <b> --></body>"),
++    ("empty_attribute_value", ["input"], "<input disabled>"),
++    ("svg_namespace_attributes", ["svg"], '<svg xmlns:xlink="http://www.w3.org/1999/xlink"><a xlink:href="/z">x</a></svg>'),
++    ("template_contents_are_split_off", ["body"], "<body><template><p>inside</p></template></body>"),
++    ("adjacent_text_is_merged", ["p"], "<p>a&amp;b&lt;c</p>"),
++    # -- selectors ---------------------------------------------------------
++    ("selector_list", ["h1, h2"], "<h1>a</h1><h2>b</h2><h3>c</h3>"),
++    ("child_combinator", ["div > p"], "<div><p>yes</p><section><p>no</p></section></div>"),
++    ("descendant_combinator", ["div p"], "<div><p>yes</p><section><p>also</p></section></div>"),
++    ("next_sibling_combinator", ["h1 + p"], "<h1>t</h1><p>yes</p><p>no</p>"),
++    ("later_sibling_combinator", ["h1 ~ p"], "<h1>t</h1><p>yes</p><span>x</span><p>also</p>"),
++    ("attribute_exists", ["[data-x]"], '<a data-x>1</a><a>2</a>'),
++    ("attribute_equals", ['[rel="next"]'], '<a rel="next">1</a><a rel="prev">2</a>'),
++    ("attribute_includes", ['[class~="b"]'], '<p class="a b c">1</p><p class="ab">2</p>'),
++    ("attribute_dash_match", ['[lang|="en"]'], '<p lang="en-GB">1</p><p lang="fr">2</p><p lang="en">3</p>'),
++    ("attribute_prefix", ['[href^="/a"]'], '<a href="/ab">1</a><a href="/b">2</a>'),
++    ("attribute_suffix", ['[href$=".pdf"]'], '<a href="x.pdf">1</a><a href="x.txt">2</a>'),
++    ("attribute_substring", ['[href*="mid"]'], '<a href="a-mid-b">1</a><a href="ab">2</a>'),
++    ("attribute_case_insensitive_flag", ['[rel="NEXT" i]'], '<a rel="next">1</a><a rel="other">2</a>'),
++    ("attribute_case_sensitive_default", ['[rel="NEXT"]'], '<a rel="next">1</a><a rel="NEXT">2</a>'),
++    ("attribute_flag_s_no_match", ['[rel="NEXT" s]'], '<a rel="next">1</a>'),
++    ("attribute_flag_s_match", ['[rel="next" s]'], '<a rel="next">1</a>'),
++    ("class_is_case_sensitive", [".Hi"], '<p class="hi">1</p><p class="Hi">2</p>'),
++    ("id_is_case_sensitive", ["#Hi"], '<p id="hi">1</p><p id="Hi">2</p>'),
++    ("universal_selector", ["*"], "<p>a</p>"),
++    ("type_selector_is_case_insensitive", ["P"], "<p>a</p>"),
++    ("first_child", ["li:first-child"], "<ul><li>1</li><li>2</li></ul>"),
++    ("last_child", ["li:last-child"], "<ul><li>1</li><li>2</li></ul>"),
++    ("only_child", ["li:only-child"], "<ul><li>1</li></ul><ol><li>2</li><li>3</li></ol>"),
++    ("nth_child", ["li:nth-child(2n)"], "<ul><li>1</li><li>2</li><li>3</li><li>4</li></ul>"),
++    ("nth_child_odd", ["li:nth-child(odd)"], "<ul><li>1</li><li>2</li><li>3</li></ul>"),
++    ("nth_child_formula", ["li:nth-child(2n+1)"], "<ul><li>1</li><li>2</li><li>3</li></ul>"),
++    ("nth_last_child", ["li:nth-last-child(1)"], "<ul><li>1</li><li>2</li></ul>"),
++    ("first_of_type", ["p:first-of-type"], "<div><span>s</span><p>1</p><p>2</p></div>"),
++    ("last_of_type", ["p:last-of-type"], "<div><p>1</p><p>2</p><span>s</span></div>"),
++    ("only_of_type", ["p:only-of-type"], "<div><span>s</span><p>1</p></div>"),
++    ("nth_of_type", ["p:nth-of-type(2)"], "<div><p>1</p><span>s</span><p>2</p></div>"),
++    ("root_pseudo", [":root"], "<p>a</p>"),
++    ("scope_pseudo", [":scope"], "<p>a</p>"),
++    ("empty_pseudo", ["p:empty"], "<p></p><p>x</p>"),
++    ("not_pseudo", ["p:not(.skip)"], '<p>1</p><p class="skip">2</p>'),
++    ("link_pseudo", [":link"], '<a href="/x">1</a><a>2</a>'),
++    ("any_link_pseudo", [":any-link"], '<a href="/x">1</a><a>2</a>'),
++    ("checked_never_matches", ["input:checked"], "<input checked><input>"),
++    ("disabled_never_matches", ["input:disabled"], "<input disabled><input>"),
++    ("hover_never_matches", ["a:hover"], '<a href="/x">1</a>'),
++    # -- selector parse failures (all panic with exit 101) -----------------
++    ("bad_selector_unbalanced", ["(("], "<p>x</p>"),
++    ("bad_selector_pseudo_element", ["p::before"], "<p>x</p>"),
++    ("bad_selector_unknown_pseudo", ["p:nonsense"], "<p>x</p>"),
++    ("bad_selector_empty_string", [""], "<p>x</p>"),
++    ("bad_selector_dangling_combinator", ["p >"], "<p>x</p>"),
++    ("bad_selector_nested_not", ["p:not(:not(a))"], "<p>x</p>"),
++    ("bad_selector_namespace_prefix", ["svg|a"], "<p>x</p>"),
++    ("bad_selector_is_unsupported", ["p:is(.a)"], "<p>x</p>"),
++    ("bad_selector_has_unsupported", ["p:has(a)"], "<p>x</p>"),
++    ("bad_attribute_flag_unknown", ['[rel="a" x]'], "<p>x</p>"),
++    # -- --remove-nodes ----------------------------------------------------
++    (
++        "remove_nodes_only_removes_first_match",
++        ["div", "-r", "a"],
++        '<div><a href="/1">1</a><a href="/2">2</a></div>',
++    ),
++    (
++        "remove_nodes_multiple_selectors",
++        ["div", "-r", "a", "-r", "span"],
++        "<div><span>s</span><a>a</a><b>b</b></div>",
++    ),
++    (
++        "remove_nodes_invalid_selector_is_ignored",
++        ["div", "-r", "(("],
++        "<div><a>a</a></div>",
++    ),
++    (
++        "remove_nodes_can_remove_self_match",
++        ["div", "-r", "div"],
++        "<div><p>inner</p></div>",
++    ),
++    (
++        "remove_nodes_affects_later_iteration",
++        ["p", "-r", "p"],
++        "<div><p>1</p><p>2</p><p>3</p></div>",
++    ),
++    # -- --attributes ------------------------------------------------------
++    ("attributes_single", ["a", "-a", "href"], '<a href="/1">1</a><a href="/2">2</a>'),
++    ("attributes_multiple", ["a", "-a", "href", "-a", "rel"], '<a href="/1" rel="next">1</a>'),
++    ("attributes_missing_prints_nothing", ["a", "-a", "nope"], '<a href="/1">1</a>'),
++    ("attributes_beat_text", ["a", "-a", "href", "-t"], '<a href="/1">1</a>'),
++    ("attributes_beat_pretty", ["a", "-a", "href", "-p"], '<a href="/1">1</a>'),
++    # -- --text ------------------------------------------------------------
++    ("text_simple", ["p", "-t"], "<p>hello <b>world</b></p>"),
++    ("text_includes_whitespace", ["div", "-t"], "<div>\n  <p>a</p>\n  <p>b</p>\n</div>"),
++    (
++        "text_ignore_whitespace",
++        ["div", "-t", "-i"],
++        "<div>\n  <p>a</p>\n  <p>b</p>\n</div>",
++    ),
++    ("text_of_empty_node", ["p", "-t"], "<p></p>"),
++    ("text_beats_pretty", ["p", "-t", "-p"], "<p>hi</p>"),
++    ("text_entities_are_decoded", ["p", "-t"], "<p>a &amp; b</p>"),
++    # -- --pretty ----------------------------------------------------------
++    ("pretty_simple", ["body", "-p"], "<body><div><p>hi</p></div></body>"),
++    ("pretty_inline_elements", ["p", "-p"], "<p>Hello <b>bold</b> and <i>italic</i> text</p>"),
++    ("pretty_void_element", ["head", "-p"], '<head><link href="/s.css" rel="stylesheet"></head>'),
++    ("pretty_nested", ["body", "-p"], "<body><ul><li>1</li><li>2</li></ul></body>"),
++    ("pretty_whitespace_only_text_dropped", ["div", "-p"], "<div>\n   <p>x</p>\n</div>"),
++    # -- --base / --detect-base -------------------------------------------
++    ("base_rewrites_relative", ["a", "-b", "https://mgdm.net"], '<a href="/foo/bar">1</a>'),
++    ("base_leaves_absolute", ["a", "-b", "https://mgdm.net"], '<a href="https://example.org/x">1</a>'),
++    ("base_relative_no_slash", ["a", "-b", "https://mgdm.net/dir/page"], '<a href="left.html">1</a>'),
++    ("base_four_slashes", ["a", "-b", "https://mgdm.net"], '<a href="////evil.com/x">1</a>'),
++    ("base_protocol_relative", ["a", "-b", "https://mgdm.net"], '<a href="//other.org/x">1</a>'),
++    ("base_empty_href", ["a", "-b", "https://mgdm.net"], '<a href="">1</a>'),
++    ("base_only_applies_to_matched_node", ["div", "-b", "https://mgdm.net"], '<div><a href="/x">1</a></div>'),
++    ("base_applies_to_link", ["link", "-b", "https://mgdm.net"], '<link href="/s.css">'),
++    ("base_applies_to_area", ["area", "-b", "https://mgdm.net"], '<map name="p"><area coords="1" href="l.html" shape="circle"></map>'),
++    ("base_invalid_is_ignored", ["a", "-b", "not a url"], '<a href="/x">1</a>'),
++    ("base_default_port_elided", ["a", "-b", "https://mgdm.net:443"], '<a href="/x">1</a>'),
++    ("base_dot_segments", ["a", "-b", "https://mgdm.net/a/b/c"], '<a href="../d">1</a>'),
++    (
++        "detect_base_from_document",
++        ["a", "-B"],
++        '<html><head><base href="https://example.org/"></head><body><a href="/x">1</a></body></html>',
++    ),
++    (
++        "detect_base_missing_falls_back_to_nothing",
++        ["a", "-B"],
++        '<html><head></head><body><a href="/x">1</a></body></html>',
++    ),
++    (
++        "detect_base_beats_explicit_base",
++        ["a", "-B", "-b", "https://mgdm.net"],
++        '<html><head><base href="https://example.org/"></head><body><a href="/x">1</a></body></html>',
++    ),
++    (
++        "detect_base_falls_back_to_explicit_base",
++        ["a", "-B", "-b", "https://mgdm.net"],
++        '<html><head></head><body><a href="/x">1</a></body></html>',
++    ),
++    (
++        "detect_base_invalid_href",
++        ["a", "-B"],
++        '<html><head><base href="nonsense"></head><body><a href="/x">1</a></body></html>',
++    ),
++    (
++        "detect_base_without_href",
++        ["a", "-B"],
++        '<html><head><base target="_blank"></head><body><a href="/x">1</a></body></html>',
++    ),
++    # -- CLI surface -------------------------------------------------------
++    ("help_long", ["--help"], ""),
++    ("help_short", ["-h"], ""),
++    ("version_long", ["--version"], ""),
++    ("version_short", ["-V"], ""),
++    ("unknown_flag", ["--nope"], ""),
++    ("filename_dash_is_stdin", ["-f", "-", "p"], "<p>hi</p>"),
++    ("missing_input_file", ["-f", "/nonexistent/file.html", "p"], ""),
++    ("unwritable_output_file", ["-o", "/nonexistent/dir/out.html", "p"], "<p>x</p>"),
++    ("missing_value_for_filename", ["-f"], ""),
++    ("missing_value_for_base", ["--base"], ""),
++    ("unknown_short_flag", ["-x"], ""),
++    ("too_many_positionals", ["p", "q"], "<p>x</p>"),
++    ("double_dash_then_positional", ["--", "p"], "<p>hi</p>"),
++    ("combined_short_flags", ["-tp", "p"], "<p>hi</p>"),
++    ("long_equals_syntax", ["--filename=-", "p"], "<p>hi</p>"),
++    ("short_attached_value", ["-f-", "p"], "<p>hi</p>"),
++    ("repeated_flag_is_fine", ["-t", "-t", "p"], "<p>hi</p>"),
++    ("selector_after_options", ["-t", "p"], "<p>hi</p>"),
++    ("repeated_value_option_filename", ["-f", "-", "-f", "-", "p"], "<p>hi</p>"),
++    ("repeated_value_option_base", ["-b", "https://a.example", "-b", "https://b.example", "a"],
++     '<a href="/x">1</a>'),
++    ("repeated_long_flag", ["--text", "--text", "p"], "<p>hi</p>"),
++    # -- selector forms the first parity run turned up -------------------
++    ("universal_with_class", ["*.hi"], '<p class="hi">a</p><p>b</p>'),
++    ("explicit_no_namespace_type", ["|p"], "<p>a</p>"),
++    ("any_namespace_type", ["*|a"], '<svg><a>s</a></svg><a href="/x">h</a>'),
++    ("attr_any_namespace", ['[*|href]'],
++     '<svg xmlns:xlink="http://www.w3.org/1999/xlink"><a xlink:href="/z">x</a></svg>'),
++    ("attr_case_insensitive_html_list_type", ['[type="TEXT"]'], '<input type="text">'),
++    ("attr_case_insensitive_html_list_lang", ['[lang="EN"]'], '<p lang="en">a</p>'),
++    ("attr_case_sensitive_class_attr", ['[class="HI"]'], '<p class="hi">a</p>'),
++    ("attr_case_sensitive_href", ['[href="/X"]'], '<a href="/x">a</a>'),
++    ("attr_case_insensitive_on_svg_element", ['[type="TEXT"]'],
++     '<svg><rect type="text"></rect></svg>'),
++    ("nth_child_negative_step", ["li:nth-child(-n+2)"],
++     "<ul><li>1</li><li>2</li><li>3</li></ul>"),
++    ("escaped_class_selector", [".a\\.b"], '<p class="a.b">x</p><p class="a">y</p>'),
++    ("single_quoted_attr_value", ["[rel='next']"], '<a rel="next">1</a>'),
++    ("unquoted_attr_value", ["[rel=next]"], '<a rel="next">1</a>'),
++    ("selector_leading_trailing_space", ["  p  "], "<p>a</p>"),
++    # -- reference-lifetime cases the differential sweep turned up ---------
++    # Detaching frees the node, so the traversal ends where kuchikiki's `Rc`s
++    # run out rather than where the tree structure would suggest. See the
++    # reference-lifetime note in htmlq/vendor/kuchikiki.py.
++    ("detach_truncates_after_first_child",
++     ["p, i, u, s, b", "-r", "p"],
++     "<div><p><i>I</i><u>U</u><s>S</s></p><b>B</b></div>"),
++    ("detach_truncates_after_nested_first_child",
++     ["p, i, x, u, b", "-r", "p"],
++     "<div><p><i><x>X</x></i><u>U</u></p><b>B</b></div>"),
++    ("detach_with_text_only_child_ends_walk",
++     ["p, b", "-r", "p"],
++     "<div><p>T</p><b>B</b></div>"),
++    ("detach_after_earlier_sibling_matched",
++     ["b, p, i", "-r", "p"],
++     "<div><b>B</b><p><i>I</i></p></div>"),
++    ("detach_of_inner_node_frees_its_tail",
++     ["p, i, s, em, u, b", "-r", "i"],
++     "<div><p><i><s>S</s><em>E</em></i><u>U</u></p><b>F</b></div>"),
++    ("remove_universal_frees_rejected_candidates",
++     ["div, span, i", "-r", "*"],
++     "<div><p>one<p>two<span>three</div>"),
++    ("remove_universal_on_html",
++     ["div, p", "-r", "html"],
++     "<div><p>one</p><p>two</p></div>"),
++]
+diff --git a/mgdm_htmlq/tests/conftest.py b/mgdm_htmlq/tests/conftest.py
+new file mode 100644
+index 0000000..9031e6d
+--- /dev/null
++++ b/mgdm_htmlq/tests/conftest.py
+@@ -0,0 +1,63 @@
++"""Shared helpers: run the CLI the way `assert_cmd::Command` runs the binary."""
++
++from __future__ import annotations
++
++import os
++import subprocess
++import sys
++
++import pytest
++
++REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++if REPO_ROOT not in sys.path:
++    sys.path.insert(0, REPO_ROOT)
++
++
++class CommandResult:
++    """The outcome of one CLI run: raw bytes, plus the exit status."""
++
++    __slots__ = ("status", "stdout", "stderr")
++
++    def __init__(self, status: int, stdout: bytes, stderr: bytes):
++        self.status = status
++        self.stdout = stdout
++        self.stderr = stderr
++
++    # The three assertions `tests/cli.rs` chains onto `Command::cargo_bin`.
++    def assert_success(self) -> "CommandResult":
++        assert self.status == 0, (
++            "expected success, got status %d\nstderr:\n%s"
++            % (self.status, self.stderr.decode("utf-8", "replace"))
++        )
++        return self
++
++    def assert_stdout_diff(self, expected: str) -> "CommandResult":
++        assert self.stdout.decode("utf-8") == expected
++        return self
++
++
++def run_htmlq(args, stdin: str = "") -> CommandResult:
++    """Invoke `python -m htmlq` -- the console script's own entry point.
++
++    A subprocess rather than an in-process call, so exit status, stream
++    buffering and byte-level output are all exercised as the user sees them.
++    """
++    environment = dict(os.environ)
++    existing = environment.get("PYTHONPATH")
++    environment["PYTHONPATH"] = (
++        REPO_ROOT if not existing else REPO_ROOT + os.pathsep + existing
++    )
++    environment["PYTHONIOENCODING"] = "utf-8"
++    completed = subprocess.run(
++        [sys.executable, "-m", "htmlq"] + list(args),
++        input=stdin.encode("utf-8"),
++        stdout=subprocess.PIPE,
++        stderr=subprocess.PIPE,
++        env=environment,
++    )
++    return CommandResult(completed.returncode, completed.stdout, completed.stderr)
++
++
++@pytest.fixture(scope="session")
++def htmlq():
++    return run_htmlq
+diff --git a/mgdm_htmlq/tests/oracle.json b/mgdm_htmlq/tests/oracle.json
+new file mode 100644
+index 0000000..7d99ffd
+--- /dev/null
++++ b/mgdm_htmlq/tests/oracle.json
+@@ -0,0 +1,762 @@
++{
++  "adjacent_text_is_merged": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>a&amp;b&lt;c</p>\n"
++  },
++  "any_link_pseudo": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"/x\">1</a>\n"
++  },
++  "any_namespace_type": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a>s</a>\n<a href=\"/x\">h</a>\n"
++  },
++  "attr_any_namespace": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a xlink:href=\"/z\">x</a>\n"
++  },
++  "attr_case_insensitive_html_list_lang": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p lang=\"en\">a</p>\n"
++  },
++  "attr_case_insensitive_html_list_type": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<input type=\"text\">\n"
++  },
++  "attr_case_insensitive_on_svg_element": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "attr_case_sensitive_class_attr": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "attr_case_sensitive_href": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "attribute_case_insensitive_flag": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a rel=\"next\">1</a>\n"
++  },
++  "attribute_case_sensitive_default": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a rel=\"next\">1</a>\n<a rel=\"NEXT\">2</a>\n"
++  },
++  "attribute_dash_match": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p lang=\"en-GB\">1</p>\n<p lang=\"en\">3</p>\n"
++  },
++  "attribute_equals": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a rel=\"next\">1</a>\n"
++  },
++  "attribute_escaping": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a title=\"q&quot;&amp;<>\">t</a>\n"
++  },
++  "attribute_exists": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a data-x=\"\">1</a>\n"
++  },
++  "attribute_flag_s_match": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a rel=\"next\">1</a>\n"
++  },
++  "attribute_flag_s_no_match": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "attribute_includes": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p class=\"a b c\">1</p>\n"
++  },
++  "attribute_order_is_source_order": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a z=\"1\" m=\"2\" a=\"3\" href=\"/x\">t</a>\n"
++  },
++  "attribute_prefix": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"/ab\">1</a>\n"
++  },
++  "attribute_substring": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"a-mid-b\">1</a>\n"
++  },
++  "attribute_suffix": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"x.pdf\">1</a>\n"
++  },
++  "attributes_beat_pretty": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "/1\n"
++  },
++  "attributes_beat_text": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "/1\n"
++  },
++  "attributes_missing_prints_nothing": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "attributes_multiple": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "/1\nnext\n"
++  },
++  "attributes_single": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "/1\n/2\n"
++  },
++  "bad_attribute_flag_unknown": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_dangling_combinator": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_empty_string": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_has_unsupported": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_is_unsupported": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_namespace_prefix": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_nested_not": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_pseudo_element": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_unbalanced": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "bad_selector_unknown_pseudo": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "base_applies_to_area": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<area coords=\"1\" href=\"https://mgdm.net/l.html\" shape=\"circle\">\n"
++  },
++  "base_applies_to_link": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<link href=\"https://mgdm.net/s.css\">\n"
++  },
++  "base_default_port_elided": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://mgdm.net/x\">1</a>\n"
++  },
++  "base_dot_segments": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://mgdm.net/a/d\">1</a>\n"
++  },
++  "base_empty_href": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://mgdm.net/\">1</a>\n"
++  },
++  "base_four_slashes": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"evil.com/x\">1</a>\n"
++  },
++  "base_invalid_is_ignored": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"/x\">1</a>\n"
++  },
++  "base_leaves_absolute": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://example.org/x\">1</a>\n"
++  },
++  "base_only_applies_to_matched_node": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div><a href=\"/x\">1</a></div>\n"
++  },
++  "base_protocol_relative": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://other.org/x\">1</a>\n"
++  },
++  "base_relative_no_slash": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://mgdm.net/dir/left.html\">1</a>\n"
++  },
++  "base_rewrites_relative": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://mgdm.net/foo/bar\">1</a>\n"
++  },
++  "checked_never_matches": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "child_combinator": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>yes</p>\n"
++  },
++  "class_is_case_sensitive": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p class=\"Hi\">2</p>\n"
++  },
++  "combined_short_flags": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "hi\n"
++  },
++  "comment_is_preserved": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<body><!-- hi <b> --></body>\n"
++  },
++  "default_selector": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<html><head></head><body><p>hello</p></body></html>\n"
++  },
++  "descendant_combinator": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>yes</p>\n<p>also</p>\n"
++  },
++  "detach_after_earlier_sibling_matched": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<b>B</b>\n<p><i>I</i></p>\n<i>I</i>\n"
++  },
++  "detach_of_inner_node_frees_its_tail": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p><u>U</u></p>\n<i><s>S</s><em>E</em></i>\n<s>S</s>\n"
++  },
++  "detach_truncates_after_first_child": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p><i>I</i><u>U</u><s>S</s></p>\n<i>I</i>\n"
++  },
++  "detach_truncates_after_nested_first_child": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p><i><x>X</x></i><u>U</u></p>\n<i><x>X</x></i>\n<x>X</x>\n"
++  },
++  "detach_with_text_only_child_ends_walk": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>T</p>\n"
++  },
++  "detect_base_beats_explicit_base": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://example.org/x\">1</a>\n"
++  },
++  "detect_base_falls_back_to_explicit_base": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://mgdm.net/x\">1</a>\n"
++  },
++  "detect_base_from_document": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"https://example.org/x\">1</a>\n"
++  },
++  "detect_base_invalid_href": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"/x\">1</a>\n"
++  },
++  "detect_base_missing_falls_back_to_nothing": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"/x\">1</a>\n"
++  },
++  "detect_base_without_href": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"/x\">1</a>\n"
++  },
++  "disabled_never_matches": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "doctype_is_not_selected": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<html><head></head><body><p>hi</p></body></html>\n"
++  },
++  "double_dash_then_positional": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>hi</p>\n"
++  },
++  "empty_attribute_value": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<input disabled=\"\">\n"
++  },
++  "empty_input": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<html><head></head><body></body></html>\n"
++  },
++  "empty_pseudo": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p></p>\n"
++  },
++  "escaped_class_selector": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p class=\"a.b\">x</p>\n"
++  },
++  "explicit_html": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<html><head></head><body><p>hello</p></body></html>\n"
++  },
++  "explicit_no_namespace_type": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "filename_dash_is_stdin": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>hi</p>\n"
++  },
++  "find_by_class": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div class=\"hi\"><a href=\"/foo/bar\">Hello</a></div>\n"
++  },
++  "find_by_id": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div id=\"my-id\"><a href=\"/foo/bar\">Hello</a></div>\n"
++  },
++  "first_child": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>1</li>\n"
++  },
++  "first_of_type": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>1</p>\n"
++  },
++  "help_long": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "Like jq, but for HTML.\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nArguments:\n  [SELECTOR]  What CSS selector to filter with [default: html]\n\nOptions:\n  -f, --filename <INPUT_PATH>        Where to read HTML input from [default: -]\n  -o, --output <OUTPUT_PATH>         Where to write the filtered HTML to [default: -]\n  -b, --base <BASE>                  What URL to prepend to links without an origin, i.e. starting with a slash (/)\n  -B, --detect-base                  Look for the `<base>` tag in input for the base\n  -t, --text                         Output only the contained text of the filtered nodes, not the entire HTML\n  -i, --ignore-whitespace            Skip over text nodes whose text that is solely whitespace\n  -p, --pretty                       If to reformat the HTML to be more nicely user-readable\n  -r, --remove-nodes <REMOVE_NODES>  Do not output the nodes matching any of these selectors\n  -a, --attributes <ATTRIBUTES>      Output only the contents of the given attributes\n  -h, --help                         Print help\n  -V, --version                      Print version\n"
++  },
++  "help_short": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "Like jq, but for HTML.\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nArguments:\n  [SELECTOR]  What CSS selector to filter with [default: html]\n\nOptions:\n  -f, --filename <INPUT_PATH>        Where to read HTML input from [default: -]\n  -o, --output <OUTPUT_PATH>         Where to write the filtered HTML to [default: -]\n  -b, --base <BASE>                  What URL to prepend to links without an origin, i.e. starting with a slash (/)\n  -B, --detect-base                  Look for the `<base>` tag in input for the base\n  -t, --text                         Output only the contained text of the filtered nodes, not the entire HTML\n  -i, --ignore-whitespace            Skip over text nodes whose text that is solely whitespace\n  -p, --pretty                       If to reformat the HTML to be more nicely user-readable\n  -r, --remove-nodes <REMOVE_NODES>  Do not output the nodes matching any of these selectors\n  -a, --attributes <ATTRIBUTES>      Output only the contents of the given attributes\n  -h, --help                         Print help\n  -V, --version                      Print version\n"
++  },
++  "hover_never_matches": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "id_is_case_sensitive": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p id=\"Hi\">2</p>\n"
++  },
++  "last_child": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>2</li>\n"
++  },
++  "last_of_type": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>2</p>\n"
++  },
++  "later_sibling_combinator": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>yes</p>\n<p>also</p>\n"
++  },
++  "link_pseudo": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a href=\"/x\">1</a>\n"
++  },
++  "long_equals_syntax": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>hi</p>\n"
++  },
++  "missing_input_file": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:93:37:\nshould have opened input file: Os { code: 2, kind: NotFound, message: \"No such file or directory\" }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "missing_value_for_base": {
++    "status": 2,
++    "stderr": "error: a value is required for '--base <BASE>' but none was supplied\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "missing_value_for_filename": {
++    "status": 2,
++    "stderr": "error: a value is required for '--filename <INPUT_PATH>' but none was supplied\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "multiple_matches_each_on_own_line": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>one</li>\n<li>two</li>\n<li>three</li>\n"
++  },
++  "nbsp_is_named_entity": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>a&nbsp;b</p>\n"
++  },
++  "next_sibling_combinator": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>yes</p>\n"
++  },
++  "no_match_prints_nothing": {
++    "status": 0,
++    "stderr": "",
++    "stdout": ""
++  },
++  "not_pseudo": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>1</p>\n"
++  },
++  "nth_child": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>2</li>\n<li>4</li>\n"
++  },
++  "nth_child_formula": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>1</li>\n<li>3</li>\n"
++  },
++  "nth_child_negative_step": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>1</li>\n<li>2</li>\n"
++  },
++  "nth_child_odd": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>1</li>\n<li>3</li>\n"
++  },
++  "nth_last_child": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>2</li>\n"
++  },
++  "nth_of_type": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>2</p>\n"
++  },
++  "only_child": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<li>1</li>\n"
++  },
++  "only_of_type": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>1</p>\n"
++  },
++  "pretty_inline_elements": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "\n<p>Hello <b>bold</b> and <i>italic</i> text\n</p>\n"
++  },
++  "pretty_nested": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "\n<body>\n  <ul>\n    <li>1\n    </li>\n    <li>\n      2\n    </li>\n  </ul>\n</body>\n"
++  },
++  "pretty_simple": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "\n<body>\n  <div>\n    <p>hi\n    </p>\n  </div>\n</body>\n"
++  },
++  "pretty_void_element": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "\n<head>\n  <link href=\"/s.css\" rel=\"stylesheet\">\n  \n</head>\n"
++  },
++  "pretty_whitespace_only_text_dropped": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "\n<div>\n  <p>x\n  </p>\n</div>\n"
++  },
++  "remove_links": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div id=\"my-id\"></div>\n"
++  },
++  "remove_nodes_affects_later_iteration": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>1</p>\n"
++  },
++  "remove_nodes_can_remove_self_match": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div><p>inner</p></div>\n"
++  },
++  "remove_nodes_invalid_selector_is_ignored": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div><a>a</a></div>\n"
++  },
++  "remove_nodes_multiple_selectors": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div><a>a</a><b>b</b></div>\n"
++  },
++  "remove_nodes_only_removes_first_match": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div><a href=\"/2\">2</a></div>\n"
++  },
++  "remove_universal_frees_rejected_candidates": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div><p>one</p><p>two<span>three</span></p></div>\n"
++  },
++  "remove_universal_on_html": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<div><p>one</p><p>two</p></div>\n<p>one</p>\n<p>two</p>\n"
++  },
++  "repeated_flag_is_fine": {
++    "status": 2,
++    "stderr": "error: the argument '--text' cannot be used multiple times\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "repeated_long_flag": {
++    "status": 2,
++    "stderr": "error: the argument '--text' cannot be used multiple times\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "repeated_value_option_base": {
++    "status": 2,
++    "stderr": "error: the argument '--base <BASE>' cannot be used multiple times\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "repeated_value_option_filename": {
++    "status": 2,
++    "stderr": "error: the argument '--filename <INPUT_PATH>' cannot be used multiple times\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "root_pseudo": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<html><head></head><body><p>a</p></body></html>\n"
++  },
++  "scope_pseudo": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<html><head></head><body><p>a</p></body></html>\n"
++  },
++  "script_text_is_raw": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<script>if (a < b && c) {}</script>\n"
++  },
++  "selector_after_options": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "hi\n"
++  },
++  "selector_leading_trailing_space": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>a</p>\n"
++  },
++  "selector_list": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<h1>a</h1>\n<h2>b</h2>\n"
++  },
++  "short_attached_value": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>hi</p>\n"
++  },
++  "single_quoted_attr_value": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a rel=\"next\">1</a>\n"
++  },
++  "style_text_is_raw": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<style>a > b { color: red }</style>\n"
++  },
++  "svg_namespace_attributes": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\"><a xlink:href=\"/z\">x</a></svg>\n"
++  },
++  "template_contents_are_split_off": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<body><template></template></body>\n"
++  },
++  "text_beats_pretty": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "hi\n"
++  },
++  "text_entities_are_decoded": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "a & b\n"
++  },
++  "text_escaping": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>a &amp; b &lt; c &gt; d</p>\n"
++  },
++  "text_ignore_whitespace": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "a\nb\n\n"
++  },
++  "text_includes_whitespace": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "\n  a\n  b\n\n"
++  },
++  "text_of_empty_node": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "\n"
++  },
++  "text_simple": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "hello world\n"
++  },
++  "too_many_positionals": {
++    "status": 2,
++    "stderr": "error: unexpected argument 'q' found\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "type_selector_is_case_insensitive": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p>a</p>\n"
++  },
++  "universal_selector": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<html><head></head><body><p>a</p></body></html>\n<head></head>\n<body><p>a</p></body>\n<p>a</p>\n"
++  },
++  "universal_with_class": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<p class=\"hi\">a</p>\n"
++  },
++  "unknown_flag": {
++    "status": 2,
++    "stderr": "error: unexpected argument '--nope' found\n\n  tip: to pass '--nope' as a value, use '-- --nope'\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "unknown_short_flag": {
++    "status": 2,
++    "stderr": "error: unexpected argument '-x' found\n\n  tip: to pass '-x' as a value, use '-- -x'\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
++    "stdout": ""
++  },
++  "unquoted_attr_value": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<a rel=\"next\">1</a>\n"
++  },
++  "unwritable_output_file": {
++    "status": 101,
++    "stderr": "\nthread 'main' panicked at src/main.rs:99:39:\nshould have created output file: Os { code: 2, kind: NotFound, message: \"No such file or directory\" }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
++    "stdout": ""
++  },
++  "version_long": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "htmlq 0.5.0\n"
++  },
++  "version_short": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "htmlq 0.5.0\n"
++  },
++  "void_element_roundtrip": {
++    "status": 0,
++    "stderr": "",
++    "stdout": "<head><link href=\"/s.css\" rel=\"stylesheet\"></head>\n"
++  }
++}
+diff --git a/mgdm_htmlq/tests/test_cli.py b/mgdm_htmlq/tests/test_cli.py
+new file mode 100644
+index 0000000..8bd0241
+--- /dev/null
++++ b/mgdm_htmlq/tests/test_cli.py
+@@ -0,0 +1,54 @@
++"""Migration of `tests/cli.rs`.
++
++The Rust file declares its cases through a `cmd_success_tests!` macro that
++expands each `(stdin, args, expected)` tuple into a `#[test]` running the binary
++and asserting `.success()` plus an exact stdout diff. `pytest.mark.parametrize`
++plays the macro's role here, with the same three tuples, the same argument
++vectors and the same expected stdout, byte for byte.
++"""
++
++from __future__ import annotations
++
++import pytest
++
++from .conftest import run_htmlq
++
++# cmd_success_tests! { .. } -- (name, (stdin, args, expected))
++CMD_SUCCESS_TESTS = [
++    (
++        "find_by_class",
++        (
++            '<html><head></head><body><div class="hi">'
++            '<a href="/foo/bar">Hello</a></div></body></html>',
++            [".hi"],
++            '<div class="hi"><a href="/foo/bar">Hello</a></div>\n',
++        ),
++    ),
++    (
++        "find_by_id",
++        (
++            '<html><head></head><body><div id="my-id">'
++            '<a href="/foo/bar">Hello</a></div></body></html>',
++            ["#my-id"],
++            '<div id="my-id"><a href="/foo/bar">Hello</a></div>\n',
++        ),
++    ),
++    (
++        "remove_links",
++        (
++            '<html><head></head><body><div id="my-id">'
++            '<a href="/foo/bar">Hello</a></div></body></html>',
++            ["#my-id", "--remove-nodes", "a"],
++            '<div id="my-id"></div>\n',
++        ),
++    ),
++]
++
++
++@pytest.mark.parametrize(
++    "value", [case for _, case in CMD_SUCCESS_TESTS],
++    ids=[name for name, _ in CMD_SUCCESS_TESTS],
++)
++def test_cmd_success(value):
++    stdin, args, expected = value
++    run_htmlq(args, stdin=stdin).assert_success().assert_stdout_diff(expected)
+diff --git a/mgdm_htmlq/tests/test_link.py b/mgdm_htmlq/tests/test_link.py
+new file mode 100644
+index 0000000..d0461b5
+--- /dev/null
++++ b/mgdm_htmlq/tests/test_link.py
+@@ -0,0 +1,123 @@
++"""Migration of the `#[cfg(test)] mod tests` block in `src/link.rs`.
++
++The Rust block holds two macros -- `rewrite_tests!` and `detect_base_tests!` --
++plus the `make_doc` / `serialize_doc` helpers they share. Both macros become
++parametrized tests here, carrying the same inputs and the same expected values.
++
++The Rust tests live inside the module under test; in Python they live in
++`tests/` instead, which is the idiomatic split and changes nothing about what is
++asserted.
++"""
++
++from __future__ import annotations
++
++import io
++
++import pytest
++
++from htmlq.link import detect_base, rewrite_relative_url
++from htmlq.vendor import kuchikiki
++from htmlq.vendor.html5ever import Writer
++from htmlq.vendor.url import Url
++
++
++def make_doc(html: str):
++    """`kuchikiki::parse_html().from_utf8().read_from(&mut html.as_bytes())`."""
++    return kuchikiki.parse_html().from_utf8().read_from(io.BytesIO(html.encode("utf-8")))
++
++
++def serialize_doc(doc) -> str:
++    """`doc.serialize(&mut content)` then `str::from_utf8`."""
++    content = Writer()
++    doc.serialize_to(content)
++    return content.getvalue().decode("utf-8")
++
++
++# rewrite_tests! { .. }
++REWRITE_TESTS = [
++    (
++        "rewrite_a_href",
++        (
++            '<html><head></head><body><a href="/foo/bar">Hello</a></body></html>',
++            '<html><head></head><body><a href="https://mgdm.net/foo/bar">Hello</a>'
++            "</body></html>",
++        ),
++    ),
++    (
++        "rewrite_link_href",
++        (
++            '<html><head><link  href="/style.css" rel="stylesheet"/></head>'
++            "<body>Hello</body></html>",
++            '<html><head><link href="https://mgdm.net/style.css" rel="stylesheet">'
++            "</head><body>Hello</body></html>",
++        ),
++    ),
++    (
++        "rewrite_map_area_href",
++        (
++            '<html><head></head><body><map name="primary">'
++            '<area coords="75,75,75" href="left.html" shape="circle"></map>'
++            "</body></html>",
++            '<html><head></head><body><map name="primary">'
++            '<area coords="75,75,75" href="https://mgdm.net/left.html" shape="circle">'
++            "</map></body></html>",
++        ),
++    ),
++    (
++        "do_not_rewrite_absolute_url",
++        (
++            '<html><head></head><body><a href="https://example.org/foo/bar">Hello</a>'
++            "</body></html>",
++            '<html><head></head><body><a href="https://example.org/foo/bar">Hello</a>'
++            "</body></html>",
++        ),
++    ),
++]
++
++
++@pytest.mark.parametrize(
++    "value", [case for _, case in REWRITE_TESTS],
++    ids=[name for name, _ in REWRITE_TESTS],
++)
++def test_rewrite(value):
++    input_html, expected = value
++    base = Url.parse("https://mgdm.net")
++    doc = make_doc(input_html)
++    for css_match in doc.select("a, area, link"):
++        node = css_match.as_node()
++        rewrite_relative_url(node, base)
++
++    result = serialize_doc(doc)
++    assert expected == result
++
++
++# detect_base_tests! { .. }
++DETECT_BASE_TESTS = [
++    (
++        "base_ok",
++        (
++            '<html><head><base href="https://example.org"></head><body>'
++            '<a href="https://example.org/foo/bar">Hello</a></body></html>',
++            Url.parse("https://example.org"),
++        ),
++    ),
++    (
++        "base_not_found",
++        (
++            '<html><head></head><body><a href="https://example.org/foo/bar">Hello</a>'
++            "</body></html>",
++            None,
++        ),
++    ),
++]
++
++
++@pytest.mark.parametrize(
++    "value", [case for _, case in DETECT_BASE_TESTS],
++    ids=[name for name, _ in DETECT_BASE_TESTS],
++)
++def test_detect_base(value):
++    input_html, expected = value
++    doc = make_doc(input_html)
++    result = detect_base(doc)
++    assert expected == result
+diff --git a/mgdm_htmlq/tests/test_output_file.py b/mgdm_htmlq/tests/test_output_file.py
+new file mode 100644
+index 0000000..c346920
+--- /dev/null
++++ b/mgdm_htmlq/tests/test_output_file.py
+@@ -0,0 +1,43 @@
++"""`--output` writes to a file rather than stdout.
++
++The parity corpus compares stdout, stderr and exit status, so it cannot check
++what lands in a *file*. The expected values below were read off the original
++Rust binary: writing to a path leaves stdout empty and puts the same bytes in
++the file that would otherwise have been printed, newline included.
++"""
++
++from __future__ import annotations
++
++from .conftest import run_htmlq
++
++
++def test_output_goes_to_the_file_not_stdout(tmp_path):
++    destination = tmp_path / "out.html"
++
++    result = run_htmlq(["-o", str(destination), "p"], stdin="<p>x</p>")
++
++    assert result.status == 0
++    assert result.stdout == b""
++    assert result.stderr == b""
++    assert destination.read_bytes() == b"<p>x</p>\n"
++
++
++def test_output_file_is_truncated_and_holds_every_match(tmp_path):
++    destination = tmp_path / "out.html"
++    destination.write_bytes(b"stale content that must not survive")
++
++    result = run_htmlq(["-o", str(destination), "li"], stdin="<ul><li>1</li><li>2</li></ul>")
++
++    assert result.status == 0
++    assert result.stdout == b""
++    assert destination.read_bytes() == b"<li>1</li>\n<li>2</li>\n"
++
++
++def test_output_file_written_for_text_mode(tmp_path):
++    destination = tmp_path / "out.txt"
++
++    result = run_htmlq(["-o", str(destination), "-t", "p"], stdin="<p>hello <b>world</b></p>")
++
++    assert result.status == 0
++    assert result.stdout == b""
++    assert destination.read_bytes() == b"hello world\n"
+diff --git a/mgdm_htmlq/tests/test_parity.py b/mgdm_htmlq/tests/test_parity.py
+new file mode 100644
+index 0000000..b04cfe3
+--- /dev/null
++++ b/mgdm_htmlq/tests/test_parity.py
+@@ -0,0 +1,44 @@
++"""Byte-for-byte parity against the original Rust binary.
++
++`tests/oracle.json` was recorded by running every case in `tests/cases.py`
++through the real `mgdm/htmlq` binary (see `tools/capture_oracle.py`). These
++tests replay the same corpus through the Python port and require the stdout,
++stderr and exit status to match exactly -- so the coverage here is not "the
++Python behaves sensibly" but "the Python behaves identically", including panic
++text, clap's usage errors, and the exit codes 0 / 2 / 101.
++"""
++
++from __future__ import annotations
++
++import json
++import os
++
++import pytest
++
++from .cases import CASES
++from .conftest import run_htmlq
++
++ORACLE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oracle.json")
++
++with open(ORACLE_PATH, encoding="utf-8") as _handle:
++    ORACLE = json.load(_handle)
++
++
++@pytest.mark.parametrize(
++    "case", CASES, ids=[name for name, _, _ in CASES]
++)
++def test_matches_rust_binary(case):
++    name, argv, stdin = case
++    expected = ORACLE[name]
++
++    result = run_htmlq(argv, stdin=stdin)
++
++    assert result.stdout.decode("utf-8") == expected["stdout"], "stdout differs"
++    assert result.stderr.decode("utf-8") == expected["stderr"], "stderr differs"
++    assert result.status == expected["status"], "exit status differs"
++
++
++def test_every_case_has_a_recording():
++    """Guards against a case being added without re-running the oracle."""
++    missing = sorted({name for name, _, _ in CASES} - set(ORACLE))
++    assert not missing, "no oracle recording for: %s" % ", ".join(missing)

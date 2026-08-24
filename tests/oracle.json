@@ -1,0 +1,762 @@
+{
+  "adjacent_text_is_merged": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>a&amp;b&lt;c</p>\n"
+  },
+  "any_link_pseudo": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"/x\">1</a>\n"
+  },
+  "any_namespace_type": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a>s</a>\n<a href=\"/x\">h</a>\n"
+  },
+  "attr_any_namespace": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a xlink:href=\"/z\">x</a>\n"
+  },
+  "attr_case_insensitive_html_list_lang": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p lang=\"en\">a</p>\n"
+  },
+  "attr_case_insensitive_html_list_type": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<input type=\"text\">\n"
+  },
+  "attr_case_insensitive_on_svg_element": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "attr_case_sensitive_class_attr": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "attr_case_sensitive_href": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "attribute_case_insensitive_flag": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a rel=\"next\">1</a>\n"
+  },
+  "attribute_case_sensitive_default": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a rel=\"next\">1</a>\n<a rel=\"NEXT\">2</a>\n"
+  },
+  "attribute_dash_match": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p lang=\"en-GB\">1</p>\n<p lang=\"en\">3</p>\n"
+  },
+  "attribute_equals": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a rel=\"next\">1</a>\n"
+  },
+  "attribute_escaping": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a title=\"q&quot;&amp;<>\">t</a>\n"
+  },
+  "attribute_exists": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a data-x=\"\">1</a>\n"
+  },
+  "attribute_flag_s_match": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a rel=\"next\">1</a>\n"
+  },
+  "attribute_flag_s_no_match": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "attribute_includes": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p class=\"a b c\">1</p>\n"
+  },
+  "attribute_order_is_source_order": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a z=\"1\" m=\"2\" a=\"3\" href=\"/x\">t</a>\n"
+  },
+  "attribute_prefix": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"/ab\">1</a>\n"
+  },
+  "attribute_substring": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"a-mid-b\">1</a>\n"
+  },
+  "attribute_suffix": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"x.pdf\">1</a>\n"
+  },
+  "attributes_beat_pretty": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "/1\n"
+  },
+  "attributes_beat_text": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "/1\n"
+  },
+  "attributes_missing_prints_nothing": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "attributes_multiple": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "/1\nnext\n"
+  },
+  "attributes_single": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "/1\n/2\n"
+  },
+  "bad_attribute_flag_unknown": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_dangling_combinator": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_empty_string": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_has_unsupported": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_is_unsupported": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_namespace_prefix": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_nested_not": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_pseudo_element": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_unbalanced": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "bad_selector_unknown_pseudo": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:115:10:\nFailed to parse CSS selector: ()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "base_applies_to_area": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<area coords=\"1\" href=\"https://mgdm.net/l.html\" shape=\"circle\">\n"
+  },
+  "base_applies_to_link": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<link href=\"https://mgdm.net/s.css\">\n"
+  },
+  "base_default_port_elided": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://mgdm.net/x\">1</a>\n"
+  },
+  "base_dot_segments": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://mgdm.net/a/d\">1</a>\n"
+  },
+  "base_empty_href": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://mgdm.net/\">1</a>\n"
+  },
+  "base_four_slashes": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"evil.com/x\">1</a>\n"
+  },
+  "base_invalid_is_ignored": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"/x\">1</a>\n"
+  },
+  "base_leaves_absolute": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://example.org/x\">1</a>\n"
+  },
+  "base_only_applies_to_matched_node": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div><a href=\"/x\">1</a></div>\n"
+  },
+  "base_protocol_relative": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://other.org/x\">1</a>\n"
+  },
+  "base_relative_no_slash": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://mgdm.net/dir/left.html\">1</a>\n"
+  },
+  "base_rewrites_relative": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://mgdm.net/foo/bar\">1</a>\n"
+  },
+  "checked_never_matches": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "child_combinator": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>yes</p>\n"
+  },
+  "class_is_case_sensitive": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p class=\"Hi\">2</p>\n"
+  },
+  "combined_short_flags": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "hi\n"
+  },
+  "comment_is_preserved": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<body><!-- hi <b> --></body>\n"
+  },
+  "default_selector": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<html><head></head><body><p>hello</p></body></html>\n"
+  },
+  "descendant_combinator": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>yes</p>\n<p>also</p>\n"
+  },
+  "detach_after_earlier_sibling_matched": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<b>B</b>\n<p><i>I</i></p>\n<i>I</i>\n"
+  },
+  "detach_of_inner_node_frees_its_tail": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p><u>U</u></p>\n<i><s>S</s><em>E</em></i>\n<s>S</s>\n"
+  },
+  "detach_truncates_after_first_child": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p><i>I</i><u>U</u><s>S</s></p>\n<i>I</i>\n"
+  },
+  "detach_truncates_after_nested_first_child": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p><i><x>X</x></i><u>U</u></p>\n<i><x>X</x></i>\n<x>X</x>\n"
+  },
+  "detach_with_text_only_child_ends_walk": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>T</p>\n"
+  },
+  "detect_base_beats_explicit_base": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://example.org/x\">1</a>\n"
+  },
+  "detect_base_falls_back_to_explicit_base": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://mgdm.net/x\">1</a>\n"
+  },
+  "detect_base_from_document": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"https://example.org/x\">1</a>\n"
+  },
+  "detect_base_invalid_href": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"/x\">1</a>\n"
+  },
+  "detect_base_missing_falls_back_to_nothing": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"/x\">1</a>\n"
+  },
+  "detect_base_without_href": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"/x\">1</a>\n"
+  },
+  "disabled_never_matches": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "doctype_is_not_selected": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<html><head></head><body><p>hi</p></body></html>\n"
+  },
+  "double_dash_then_positional": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>hi</p>\n"
+  },
+  "empty_attribute_value": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<input disabled=\"\">\n"
+  },
+  "empty_input": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<html><head></head><body></body></html>\n"
+  },
+  "empty_pseudo": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p></p>\n"
+  },
+  "escaped_class_selector": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p class=\"a.b\">x</p>\n"
+  },
+  "explicit_html": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<html><head></head><body><p>hello</p></body></html>\n"
+  },
+  "explicit_no_namespace_type": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "filename_dash_is_stdin": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>hi</p>\n"
+  },
+  "find_by_class": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div class=\"hi\"><a href=\"/foo/bar\">Hello</a></div>\n"
+  },
+  "find_by_id": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div id=\"my-id\"><a href=\"/foo/bar\">Hello</a></div>\n"
+  },
+  "first_child": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>1</li>\n"
+  },
+  "first_of_type": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>1</p>\n"
+  },
+  "help_long": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "Like jq, but for HTML.\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nArguments:\n  [SELECTOR]  What CSS selector to filter with [default: html]\n\nOptions:\n  -f, --filename <INPUT_PATH>        Where to read HTML input from [default: -]\n  -o, --output <OUTPUT_PATH>         Where to write the filtered HTML to [default: -]\n  -b, --base <BASE>                  What URL to prepend to links without an origin, i.e. starting with a slash (/)\n  -B, --detect-base                  Look for the `<base>` tag in input for the base\n  -t, --text                         Output only the contained text of the filtered nodes, not the entire HTML\n  -i, --ignore-whitespace            Skip over text nodes whose text that is solely whitespace\n  -p, --pretty                       If to reformat the HTML to be more nicely user-readable\n  -r, --remove-nodes <REMOVE_NODES>  Do not output the nodes matching any of these selectors\n  -a, --attributes <ATTRIBUTES>      Output only the contents of the given attributes\n  -h, --help                         Print help\n  -V, --version                      Print version\n"
+  },
+  "help_short": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "Like jq, but for HTML.\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nArguments:\n  [SELECTOR]  What CSS selector to filter with [default: html]\n\nOptions:\n  -f, --filename <INPUT_PATH>        Where to read HTML input from [default: -]\n  -o, --output <OUTPUT_PATH>         Where to write the filtered HTML to [default: -]\n  -b, --base <BASE>                  What URL to prepend to links without an origin, i.e. starting with a slash (/)\n  -B, --detect-base                  Look for the `<base>` tag in input for the base\n  -t, --text                         Output only the contained text of the filtered nodes, not the entire HTML\n  -i, --ignore-whitespace            Skip over text nodes whose text that is solely whitespace\n  -p, --pretty                       If to reformat the HTML to be more nicely user-readable\n  -r, --remove-nodes <REMOVE_NODES>  Do not output the nodes matching any of these selectors\n  -a, --attributes <ATTRIBUTES>      Output only the contents of the given attributes\n  -h, --help                         Print help\n  -V, --version                      Print version\n"
+  },
+  "hover_never_matches": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "id_is_case_sensitive": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p id=\"Hi\">2</p>\n"
+  },
+  "last_child": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>2</li>\n"
+  },
+  "last_of_type": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>2</p>\n"
+  },
+  "later_sibling_combinator": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>yes</p>\n<p>also</p>\n"
+  },
+  "link_pseudo": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a href=\"/x\">1</a>\n"
+  },
+  "long_equals_syntax": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>hi</p>\n"
+  },
+  "missing_input_file": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:93:37:\nshould have opened input file: Os { code: 2, kind: NotFound, message: \"No such file or directory\" }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "missing_value_for_base": {
+    "status": 2,
+    "stderr": "error: a value is required for '--base <BASE>' but none was supplied\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "missing_value_for_filename": {
+    "status": 2,
+    "stderr": "error: a value is required for '--filename <INPUT_PATH>' but none was supplied\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "multiple_matches_each_on_own_line": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>one</li>\n<li>two</li>\n<li>three</li>\n"
+  },
+  "nbsp_is_named_entity": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>a&nbsp;b</p>\n"
+  },
+  "next_sibling_combinator": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>yes</p>\n"
+  },
+  "no_match_prints_nothing": {
+    "status": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "not_pseudo": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>1</p>\n"
+  },
+  "nth_child": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>2</li>\n<li>4</li>\n"
+  },
+  "nth_child_formula": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>1</li>\n<li>3</li>\n"
+  },
+  "nth_child_negative_step": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>1</li>\n<li>2</li>\n"
+  },
+  "nth_child_odd": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>1</li>\n<li>3</li>\n"
+  },
+  "nth_last_child": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>2</li>\n"
+  },
+  "nth_of_type": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>2</p>\n"
+  },
+  "only_child": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<li>1</li>\n"
+  },
+  "only_of_type": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>1</p>\n"
+  },
+  "pretty_inline_elements": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "\n<p>Hello <b>bold</b> and <i>italic</i> text\n</p>\n"
+  },
+  "pretty_nested": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "\n<body>\n  <ul>\n    <li>1\n    </li>\n    <li>\n      2\n    </li>\n  </ul>\n</body>\n"
+  },
+  "pretty_simple": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "\n<body>\n  <div>\n    <p>hi\n    </p>\n  </div>\n</body>\n"
+  },
+  "pretty_void_element": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "\n<head>\n  <link href=\"/s.css\" rel=\"stylesheet\">\n  \n</head>\n"
+  },
+  "pretty_whitespace_only_text_dropped": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "\n<div>\n  <p>x\n  </p>\n</div>\n"
+  },
+  "remove_links": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div id=\"my-id\"></div>\n"
+  },
+  "remove_nodes_affects_later_iteration": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>1</p>\n"
+  },
+  "remove_nodes_can_remove_self_match": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div><p>inner</p></div>\n"
+  },
+  "remove_nodes_invalid_selector_is_ignored": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div><a>a</a></div>\n"
+  },
+  "remove_nodes_multiple_selectors": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div><a>a</a><b>b</b></div>\n"
+  },
+  "remove_nodes_only_removes_first_match": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div><a href=\"/2\">2</a></div>\n"
+  },
+  "remove_universal_frees_rejected_candidates": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div><p>one</p><p>two<span>three</span></p></div>\n"
+  },
+  "remove_universal_on_html": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<div><p>one</p><p>two</p></div>\n<p>one</p>\n<p>two</p>\n"
+  },
+  "repeated_flag_is_fine": {
+    "status": 2,
+    "stderr": "error: the argument '--text' cannot be used multiple times\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "repeated_long_flag": {
+    "status": 2,
+    "stderr": "error: the argument '--text' cannot be used multiple times\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "repeated_value_option_base": {
+    "status": 2,
+    "stderr": "error: the argument '--base <BASE>' cannot be used multiple times\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "repeated_value_option_filename": {
+    "status": 2,
+    "stderr": "error: the argument '--filename <INPUT_PATH>' cannot be used multiple times\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "root_pseudo": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<html><head></head><body><p>a</p></body></html>\n"
+  },
+  "scope_pseudo": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<html><head></head><body><p>a</p></body></html>\n"
+  },
+  "script_text_is_raw": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<script>if (a < b && c) {}</script>\n"
+  },
+  "selector_after_options": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "hi\n"
+  },
+  "selector_leading_trailing_space": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>a</p>\n"
+  },
+  "selector_list": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<h1>a</h1>\n<h2>b</h2>\n"
+  },
+  "short_attached_value": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>hi</p>\n"
+  },
+  "single_quoted_attr_value": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a rel=\"next\">1</a>\n"
+  },
+  "style_text_is_raw": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<style>a > b { color: red }</style>\n"
+  },
+  "svg_namespace_attributes": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<svg xmlns:xlink=\"http://www.w3.org/1999/xlink\"><a xlink:href=\"/z\">x</a></svg>\n"
+  },
+  "template_contents_are_split_off": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<body><template></template></body>\n"
+  },
+  "text_beats_pretty": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "hi\n"
+  },
+  "text_entities_are_decoded": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "a & b\n"
+  },
+  "text_escaping": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>a &amp; b &lt; c &gt; d</p>\n"
+  },
+  "text_ignore_whitespace": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "a\nb\n\n"
+  },
+  "text_includes_whitespace": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "\n  a\n  b\n\n"
+  },
+  "text_of_empty_node": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "\n"
+  },
+  "text_simple": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "hello world\n"
+  },
+  "too_many_positionals": {
+    "status": 2,
+    "stderr": "error: unexpected argument 'q' found\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "type_selector_is_case_insensitive": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p>a</p>\n"
+  },
+  "universal_selector": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<html><head></head><body><p>a</p></body></html>\n<head></head>\n<body><p>a</p></body>\n<p>a</p>\n"
+  },
+  "universal_with_class": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<p class=\"hi\">a</p>\n"
+  },
+  "unknown_flag": {
+    "status": 2,
+    "stderr": "error: unexpected argument '--nope' found\n\n  tip: to pass '--nope' as a value, use '-- --nope'\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "unknown_short_flag": {
+    "status": 2,
+    "stderr": "error: unexpected argument '-x' found\n\n  tip: to pass '-x' as a value, use '-- -x'\n\nUsage: htmlq [OPTIONS] [SELECTOR]\n\nFor more information, try '--help'.\n",
+    "stdout": ""
+  },
+  "unquoted_attr_value": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<a rel=\"next\">1</a>\n"
+  },
+  "unwritable_output_file": {
+    "status": 101,
+    "stderr": "\nthread 'main' panicked at src/main.rs:99:39:\nshould have created output file: Os { code: 2, kind: NotFound, message: \"No such file or directory\" }\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n",
+    "stdout": ""
+  },
+  "version_long": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "htmlq 0.5.0\n"
+  },
+  "version_short": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "htmlq 0.5.0\n"
+  },
+  "void_element_roundtrip": {
+    "status": 0,
+    "stderr": "",
+    "stdout": "<head><link href=\"/s.css\" rel=\"stylesheet\"></head>\n"
+  }
+}

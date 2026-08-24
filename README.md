@@ -1,63 +1,44 @@
 # htmlq
+
 Like [`jq`](https://stedolan.github.io/jq/), but for HTML. Uses [CSS selectors](https://developer.mozilla.org/en-US/docs/Learn/CSS/Introduction_to_CSS/Selectors) to extract bits of content from HTML files.
+
+This is a **Python migration of [mgdm/htmlq](https://github.com/mgdm/htmlq)** (Rust, MIT).
+It is a behavioural port, not a reimplementation: the CLI, the output bytes, the
+exit codes and the panic messages are reproduced exactly. See
+[Migration notes](#migration-notes) for what that means in practice and where
+the edges are.
 
 ## Installation
 
-### [Cargo](https://crates.io/crates/htmlq)
-
 ```sh
-cargo install htmlq
+pip install .
 ```
 
-### [FreeBSD pkg](https://www.freshports.org/textproc/htmlq)
-
-```sh
-pkg install htmlq
-```
-
-### [Homebrew](https://formulae.brew.sh/formula/htmlq)
-
-```sh
-brew install htmlq
-```
-
-### [Scoop](https://scoop.sh/)
-
-```sh
-scoop install htmlq
-```
+That puts an `htmlq` command on your path. `python -m htmlq` is equivalent.
 
 ## Usage
 
 ```console
 $ htmlq -h
-htmlq 0.4.0
-Michael Maclean <michael@mgdm.net>
-Runs CSS selectors on HTML
+Like jq, but for HTML.
 
-USAGE:
-    htmlq [FLAGS] [OPTIONS] [--] [selector]...
+Usage: htmlq [OPTIONS] [SELECTOR]
 
-FLAGS:
-    -B, --detect-base          Try to detect the base URL from the <base> tag in the document. If not found, default to
-                               the value of --base, if supplied
-    -h, --help                 Prints help information
-    -w, --ignore-whitespace    When printing text nodes, ignore those that consist entirely of whitespace
-    -p, --pretty               Pretty-print the serialised output
-    -t, --text                 Output only the contents of text nodes inside selected elements
-    -V, --version              Prints version information
+Arguments:
+  [SELECTOR]  What CSS selector to filter with [default: html]
 
-OPTIONS:
-    -a, --attribute <attribute>         Only return this attribute (if present) from selected elements
-    -b, --base <base>                   Use this URL as the base for links
-    -f, --filename <FILE>               The input file. Defaults to stdin
-    -o, --output <FILE>                 The output file. Defaults to stdout
-    -r, --remove-nodes <SELECTOR>...    Remove nodes matching this expression before output. May be specified multiple
-                                        times
-
-ARGS:
-    <selector>...    The CSS expression to select [default: html]
-$
+Options:
+  -f, --filename <INPUT_PATH>        Where to read HTML input from [default: -]
+  -o, --output <OUTPUT_PATH>         Where to write the filtered HTML to [default: -]
+  -b, --base <BASE>                  What URL to prepend to links without an origin, i.e. starting with a slash (/)
+  -B, --detect-base                  Look for the `<base>` tag in input for the base
+  -t, --text                         Output only the contained text of the filtered nodes, not the entire HTML
+  -i, --ignore-whitespace            Skip over text nodes whose text that is solely whitespace
+  -p, --pretty                       If to reformat the HTML to be more nicely user-readable
+  -r, --remove-nodes <REMOVE_NODES>  Do not output the nodes matching any of these selectors
+  -a, --attributes <ATTRIBUTES>      Output only the contents of the given attributes
+  -h, --help                         Print help
+  -V, --version                      Print version
 ```
 
 ## Examples
@@ -73,90 +54,30 @@ $ curl --silent https://www.rust-lang.org/ | htmlq '#get-help'
           <li><a href="https://users.rust-lang.org">Ask a Question on the Users Forum</a></li>
           <li><a href="http://ping.rust-lang.org">Check Website Status</a></li>
         </ul>
-        <div class="languages">
-            <label class="hidden" for="language-footer">Language</label>
-            <select id="language-footer">
-                <option title="English (US)" value="en-US">English (en-US)</option>
-<option title="French" value="fr">Français (fr)</option>
-<option title="German" value="de">Deutsch (de)</option>
-
-            </select>
-        </div>
       </div>
 ```
 
 ### Find all the links in a page
 
 ```console
-$ curl --silent https://www.rust-lang.org/ | htmlq --attribute href a
+$ curl --silent https://www.rust-lang.org/ | htmlq --attributes href a
 /
 /tools/install
 /learn
-/tools
-/governance
-/community
 https://blog.rust-lang.org/
-/learn/get-started
-https://blog.rust-lang.org/2019/04/25/Rust-1.34.1.html
-https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html
 [...]
 ```
 
 ### Get the text content of a post
 
 ```console
-$ curl --silent https://nixos.org/nixos/about.html | htmlq  --text .main
-
-          About NixOS
-
-NixOS is a GNU/Linux distribution that aims to
-improve the state of the art in system configuration management.  In
-existing distributions, actions such as upgrades are dangerous:
-upgrading a package can cause other packages to break, upgrading an
-entire system is much less reliable than reinstalling from scratch,
-you can’t safely test what the results of a configuration change will
-be, you cannot easily undo changes to the system, and so on.  We want
-to change that.  NixOS has many innovative features:
-
-[...]
+$ curl --silent https://nixos.org/nixos/about.html | htmlq --text .main
 ```
 
 ### Remove a node before output
 
-There's a big SVG image in this page that I don't need, so here's how to remove it.
-
 ```console
-$ curl --silent https://nixos.org/ | ./target/debug/htmlq '.whynix' --remove-nodes svg
-<ul class="whynix">
-      <li>
-
-        <h2>Reproducible</h2>
-        <p>
-          Nix builds packages in isolation from each other. This ensures that they
-          are reproducible and don't have undeclared dependencies, so <strong>if a
-            package works on one machine, it will also work on another</strong>.
-        </p>
-      </li>
-      <li>
-
-        <h2>Declarative</h2>
-        <p>
-          Nix makes it <strong>trivial to share development and build
-            environments</strong> for your projects, regardless of what programming
-          languages and tools you’re using.
-        </p>
-      </li>
-      <li>
-
-        <h2>Reliable</h2>
-        <p>
-          Nix ensures that installing or upgrading one package <strong>cannot
-            break other packages</strong>. It allows you to <strong>roll back to
-            previous versions</strong>, and ensures that no package is in an
-          inconsistent state during an upgrade.
-        </p>
-      </li>
-    </ul>
+$ curl --silent https://nixos.org/ | htmlq '.whynix' --remove-nodes svg
 ```
 
 ### Pretty print HTML
@@ -165,19 +86,6 @@ $ curl --silent https://nixos.org/ | ./target/debug/htmlq '.whynix' --remove-nod
 
 ```console
 $ curl --silent https://mgdm.net | htmlq --pretty '#posts'
-<section id="posts">
-  <h2>I write about...
-  </h2>
-  <ul class="post-list">
-    <li>
-      <time datetime="2019-04-29 00:%i:1556496000" pubdate="">
-        29/04/2019</time><a href="/weblog/nettop/">
-        <h3>Debugging network connections on macOS with nettop
-        </h3></a>
-      <p>Using nettop to find out what network connections a program is trying to make.
-      </p>
-    </li>
-[...]
 ```
 
 ### Syntax highlighting with [`bat`](https://github.com/sharkdp/bat)
@@ -186,4 +94,109 @@ $ curl --silent https://mgdm.net | htmlq --pretty '#posts'
 $ curl --silent example.com | htmlq 'body' | bat --language html
 ```
 
-> <img alt="Syntax highlighted output" width="700" src="https://user-images.githubusercontent.com/2346707/132808980-db8991ff-9177-4cb7-a018-39ad94282374.png" />
+## Migration notes
+
+### Layout
+
+The package mirrors the crate module for module. `src/link.rs` and
+`src/pretty_print.rs` become `htmlq/link.py` and `htmlq/pretty_print.py`;
+`src/main.rs` splits into `htmlq/main.py` (the program) and `htmlq/cli.py` (the
+`#[derive(Parser)]` layer, which is large enough to deserve its own file).
+
+```
+src/main.rs         ->  htmlq/main.py + htmlq/cli.py
+src/link.rs         ->  htmlq/link.py
+src/pretty_print.rs ->  htmlq/pretty_print.py
+tests/cli.rs        ->  tests/test_cli.py
+src/link.rs  #[cfg(test)]  ->  tests/test_link.py
+```
+
+### Dependencies
+
+htmlq leans on its crates heavily enough that their behaviour *is* htmlq's
+behaviour, so most of them are ported rather than swapped for a Python
+equivalent that would be "close enough".
+
+| Rust crate | Python | Why |
+|---|---|---|
+| `html5ever` (parsing) | `html5lib` | The same WHATWG tree-construction algorithm, already implemented in Python. |
+| `html5ever` (serializing) | `htmlq/vendor/html5ever.py` | `pretty_print.rs` *subclasses* `HtmlSerializer` and writes into its buffer between callbacks, so the exact byte output and callback protocol are observable. |
+| `kuchikiki` | `htmlq/vendor/kuchikiki.py` | The DOM, its lazy iterators and its `Rc`/`Weak` link structure are all observable — see below. |
+| `selectors` 0.22 | `htmlq/vendor/selectors.py` | Which selectors *parse* decides which inputs panic, and kuchikiki's `SelectorImpl` makes `:checked`, `:disabled` &c. never match. |
+| `url` 2.2 (rust-url) | `htmlq/vendor/url.py` | WHATWG URL, not RFC 3986 — `urllib.parse` gives different answers for `--base`. |
+| `clap` 4 | `htmlq/cli.py` | Help text, error wording and exit code 2 are part of the CLI contract. |
+| `lazy_static` | a module-level `frozenset` | Python evaluates module bodies once already. |
+
+`html5lib` and `idna` are the only installed dependencies.
+
+### Behaviours that took deliberate work
+
+These are the places where a naive port would compile, pass a smoke test, and
+still be wrong.
+
+- **Detaching frees nodes, and that truncates the traversal.** kuchikiki holds
+  `first_child`/`next_sibling` as strong `Rc`s and `parent`/`previous_sibling`/
+  `last_child` as `Weak`s. `--remove-nodes` detaches a node while the selector
+  iterator is walking it, so once the last `Rc` goes the node is dropped and its
+  children's `parent()` returns `None`, ending the walk. `htmlq 'p, i, u' -r p`
+  really does stop after the first element inside the removed `<p>`. The port
+  reproduces this with `weakref.ref` back-edges plus explicit iterator classes
+  (a generator frame would hold a node one step too long).
+- **`--remove-nodes` removes only the first match** per selected node, because
+  the Rust calls `select_first`.
+- **Attribute order** is source order, and rewriting `href` keeps its original
+  position — kuchikiki stores an `IndexMap`.
+- **Adjacent text nodes are merged.** html5ever folds character runs into one
+  text node; html5lib does not, and the difference shows up in
+  `--text --ignore-whitespace` (a newline per fragment) and `--pretty`.
+- **`<template>` children live in a separate contents fragment**, so a
+  serialised `<template>` is empty.
+- **Attribute-value matching is case-insensitive for 45 HTML attributes**
+  (`rel`, `type`, `lang`, …) but only against HTML elements — `[type="TEXT"]`
+  matches `<input type="text">` and not `<rect type="text">` inside an `<svg>`.
+- **`str::trim()` is not `str.strip()`**: Rust trims Unicode `White_Space`,
+  Python's `strip()` also eats U+001C–U+001F. `rust_trim` implements the former.
+- **Output is bare LF.** Everything goes through the binary buffers so Windows
+  does not turn it into CRLF.
+- **`.expect()` panics exit 101**, with Rust's message shape on stderr; clap
+  usage errors exit 2. Both are reproduced, including the `src/main.rs:LINE:COL`
+  locations, which are kept verbatim so the stderr stays byte-identical.
+
+### Known differences
+
+One, and it is inherited from the parser: html5lib has no *scripting enabled*
+flag, so it parses `<noscript>` in `<head>` as markup, where html5ever with its
+default `scripting_enabled: true` treats the contents as raw text. Documents
+using `<noscript>` in `<head>` can therefore produce a different tree. The
+*serialiser* side of the same flag is implemented, so `<noscript>` text is
+written unescaped exactly as the Rust writes it.
+
+## Testing
+
+```sh
+pip install -e ".[test]"
+python -m pytest
+```
+
+Three suites:
+
+- `tests/test_cli.py` and `tests/test_link.py` are the migrated Rust tests — the
+  same inputs, assertions and expected outputs as `tests/cli.rs` and the
+  `#[cfg(test)]` block in `src/link.rs`.
+- `tests/test_parity.py` replays `tests/cases.py` against `tests/oracle.json`, a
+  recording of what the **real Rust binary** printed for each case, and requires
+  stdout, stderr and exit status to match byte for byte.
+
+`tools/capture_oracle.py` regenerates the recording from the Rust binary, and
+`tools/diff_sweep.py` cross-multiplies documents, selectors and flag sets
+against both implementations to hunt for divergences the curated corpus misses.
+Both need the `htmlq-rust-test` image:
+
+```sh
+docker build -f docker/htmlq-rust-test.Dockerfile -t htmlq-rust-test scraped_repos/Rust/mgdm_htmlq
+```
+
+## License
+
+MIT, Copyright (c) 2019 Michael Maclean. See [LICENSE.md](LICENSE.md); the
+original project's license is carried over unchanged.
